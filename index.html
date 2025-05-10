@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Tumor Detection </title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --light: #f8fafc;
+            --dark: #0f172a;
+            --gray: #64748b;
+            --gray-light: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: #f1f5f9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2.5rem 0;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: -10%;
+            width: 120%;
+            height: 100px;
+            background: white;
+            transform: rotate(-2deg);
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            position: relative;
+            z-index: 2;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            opacity: 0.9;
+            font-weight: 400;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 2.5rem;
+            margin: 2rem 0;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .upload-area {
+            text-align: center;
+            border: 2px dashed var(--gray-light);
+            padding: 3rem 2rem;
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-area.dragging {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:disabled {
+            background-color: var(--gray-light);
+            color: var(--gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .file-info {
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: var(--gray-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .result-container {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .image-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .image-box {
+            text-align: center;
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .image-box img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease;
+        }
+
+        .image-box img:hover {
+            transform: scale(1.02);
+        }
+
+        .result-card {
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .result-icon {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .positive {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--danger);
+        }
+
+        .negative {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--success);
+        }
+
+        .confidence-meter {
+            height: 0.75rem;
+            background-color: var(--gray-light);
+            border-radius: var(--radius-md);
+            margin: 1.5rem 0;
+            overflow: hidden;
+        }
+
+        .confidence-level {
+            height: 100%;
+            border-radius: var(--radius-md);
+        }
+
+        .recommendations {
+            margin-top: 2rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .recommendations ul {
+            padding-left: 1.5rem;
+            margin-top: 0.75rem;
+            list-style-type: none;
+        }
+
+        .recommendations li {
+            margin-bottom: 0.75rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .recommendations li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 0;
+            margin-top: 4rem;
+            background-color: var(--dark);
+            color: white;
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: -10%;
+            width: 120%;
+            height: 100px;
+            background: white;
+            transform: rotate(2deg);
+            z-index: 1;
+        }
+
+        .footer-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .prediction-details {
+            margin-top: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            font-family: monospace;
+            overflow-x: auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .result-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .image-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Brain Tumor Detection AI</h1>
+            <p class="subtitle">Advanced deep learning for medical image analysis</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card" id="upload-section">
+            <h2>Upload MRI Scan</h2>
+            <p>Upload a brain MRI scan in JPG or PNG format for analysis</p>
+
+            <div class="upload-area" id="drop-area">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem; color: var(--primary);">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <h3>Drag & Drop your MRI scan here</h3>
+                <p>or</p>
+                <button class="btn btn-outline" id="browse-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
+                        <line x1="16" y1="5" x2="22" y2="5"></line>
+                        <line x1="19" y1="2" x2="19" y2="8"></line>
+                    </svg>
+                    Browse Files
+                </button>
+                <input type="file" id="file-input" accept=".png,.jpg,.jpeg" style="display: none;">
+            </div>
+
+            <div id="file-display" style="display: none;">
+                <div class="file-info">
+                    <span id="file-name"></span>
+                    <button class="btn btn-outline" id="remove-file">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Remove
+                    </button>
+                </div>
+                <img id="image-preview" style="max-width: 100%; max-height: 300px; margin-top: 1rem; display: none; border-radius: var(--radius-sm);">
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing MRI scan...</p>
+                <p class="progress-text" id="progress-text"></p>
+            </div>
+
+            <button class="btn" id="analyze-btn" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Analyze Scan
+            </button>
+        </section>
+
+        <section class="card result-container" id="result-section">
+            <h2>Analysis Results</h2>
+
+            <div id="result-card" class="result-card">
+                <!-- Results will be inserted here -->
+            </div>
+
+            <div class="image-comparison">
+                <div class="image-box">
+                    <h3>Original Scan</h3>
+                    <img id="original-image" src="" alt="Original MRI scan">
+                </div>
+                <div class="image-box">
+                    <h3>AI Analysis</h3>
+                    <img id="analysis-image" src="" alt="Analysis visualization">
+                </div>
+            </div>
+
+            <div id="confidence-display">
+                <h3>Confidence Level</h3>
+                <div class="confidence-meter">
+                    <div class="confidence-level" id="confidence-bar"></div>
+                </div>
+                <p id="confidence-text" style="text-align: center; margin-top: 0.5rem;"></p>
+            </div>
+
+            <div class="recommendations" id="recommendations">
+                <!-- Recommendations will be inserted here -->
+            </div>
+
+            <div id="prediction-details" class="prediction-details" style="display: none;">
+                <h4>Detailed Prediction</h4>
+                <pre id="raw-prediction"></pre>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn" id="new-scan-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
+                    </svg>
+                    Analyze Another Scan
+                </button>
+                <button class="btn btn-outline" id="details-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    Show Details
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>Medical AI Diagnostic Tool &copy; 2025</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;">
+                For research purposes only | Not a substitute for professional medical diagnosis
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const fileName = document.getElementById('file-name');
+        const fileDisplay = document.getElementById('file-display');
+        const imagePreview = document.getElementById('image-preview');
+        const removeFileBtn = document.getElementById('remove-file');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const loading = document.getElementById('loading');
+        const progressText = document.getElementById('progress-text');
+        const uploadSection = document.getElementById('upload-section');
+        const resultSection = document.getElementById('result-section');
+        const resultCard = document.getElementById('result-card');
+        const originalImage = document.getElementById('original-image');
+        const analysisImage = document.getElementById('analysis-image');
+        const confidenceBar = document.getElementById('confidence-bar');
+        const confidenceText = document.getElementById('confidence-text');
+        const recommendations = document.getElementById('recommendations');
+        const newScanBtn = document.getElementById('new-scan-btn');
+        const detailsBtn = document.getElementById('details-btn');
+        const predictionDetails = document.getElementById('prediction-details');
+        const rawPrediction = document.getElementById('raw-prediction');
+
+        // Event Listeners
+        browseBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        removeFileBtn.addEventListener('click', resetFileInput);
+        analyzeBtn.addEventListener('click', analyzeImage);
+        newScanBtn.addEventListener('click', resetForm);
+        detailsBtn.addEventListener('click', toggleDetails);
+
+        // Drag and Drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('dragging');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('dragging');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) {
+                fileInput.files = files;
+                handleFileSelect({ target: fileInput });
+            }
+        }
+
+        // File handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/png'];
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(jpeg|jpg|png)$/i)) {
+                showError('Please upload a valid image file (JPG or PNG)');
+                return;
+            }
+
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showError('File size too large (max 5MB allowed)');
+                return;
+            }
+
+            // Display file info
+            fileName.textContent = file.name;
+            fileDisplay.style.display = 'block';
+            analyzeBtn.disabled = false;
+
+            // Preview image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                originalImage.src = e.target.result; // Set for results display
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetFileInput() {
+            fileInput.value = '';
+            fileDisplay.style.display = 'none';
+            analyzeBtn.disabled = true;
+            imagePreview.style.display = 'none';
+        }
+
+        function showError(message) {
+            resultCard.innerHTML = `
+                <div style="color: var(--danger);">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+            resultSection.style.display = 'block';
+            uploadSection.style.display = 'none';
+        }
+
+        // Analysis function
+        async function analyzeImage() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Show loading state
+            analyzeBtn.disabled = true;
+            loading.style.display = 'block';
+            progressText.textContent = 'Uploading file...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Update progress
+                progressText.textContent = 'Processing MRI scan...';
+
+                // Make API call to Flask backend
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let errorMessage = `Server error: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        console.error('Error parsing error response:', e);
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const result = await response.json();
+
+                // Debug output
+                console.log("Server response:", result);
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                displayResults(result);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Display results
+        function displayResults(data) {
+            // Set result card based on prediction
+            if (data.hasTumor) {
+                resultCard.className = 'result-card positive';
+                resultCard.innerHTML = `
+                    <div class="result-icon">⚠️</div>
+                    <div>
+                        <h3>Potential Tumor Detected</h3>
+                        ${data.tumorType ? `<p><strong>Type:</strong> ${data.tumorType}</p>` : ''}
+                        <p>AI analysis detected abnormal tissue patterns. Please consult with a medical professional.</p>
+                    </div>
+                `;
+            } else {
+                resultCard.className = 'result-card negative';
+                resultCard.innerHTML = `
+                    <div class="result-icon">✅</div>
+                    <div>
+                        <h3>No Tumor Detected</h3>
+                        <p>The scan appears normal with no signs of abnormal tissue.</p>
+                        <p>Regular check-ups are still recommended.</p>
+                    </div>
+                `;
+            }
+
+            // Set confidence meter
+            const confidencePercent = Math.round(data.confidence * 100);
+            confidenceBar.style.width = `${confidencePercent}%`;
+            confidenceBar.style.backgroundColor = data.hasTumor ? 'var(--danger)' : 'var(--success)';
+            confidenceText.textContent = `Confidence: ${confidencePercent}%`;
+
+            // Set recommendations
+            if (data.hasTumor) {
+                recommendations.innerHTML = `
+                    <h3>Recommended Next Steps</h3>
+                    <ul>
+                        <li><strong>Consult a specialist:</strong> Schedule an appointment with a neurologist or neurosurgeon</li>
+                        <li><strong>Further imaging:</strong> Your doctor may recommend additional scans (MRI with contrast, CT scan)</li>
+                        <li><strong>Biopsy consideration:</strong> May be needed for definitive diagnosis</li>
+                        <li><strong>Treatment planning:</strong> Discuss potential treatment options with your healthcare provider</li>
+                    </ul>
+                    <div style="margin-top: 1rem; padding: 1rem; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-sm);">
+                        <p style="font-style: italic; color: var(--danger);">
+                            ⚠️ This AI analysis is not a definitive diagnosis. Always consult with qualified medical professionals for clinical decisions.
+                        </p>
+                    </div>
+                `;
+            } else {
+                recommendations.innerHTML = `
+                    <h3>Recommendations</h3>
+                    <ul>
+                        <li><strong>Regular check-ups:</strong> Continue with routine medical examinations</li>
+                        <li><strong>Symptom monitoring:</strong> Watch for headaches, vision changes, or neurological symptoms</li>
+                        <li><strong>Healthy lifestyle:</strong> Maintain good sleep, nutrition, and exercise habits</li>
+                        <li><strong>Follow-up:</strong> Consult a doctor if you develop any concerning symptoms</li>
+                    </ul>
+                `;
+            }
+
+            // Set analysis visualization if available
+            if (data.visualization) {
+                analysisImage.src = data.visualization;
+            } else {
+                // Default analysis placeholder
+                analysisImage.src = originalImage.src;
+            }
+
+            // Store raw prediction data
+            if (data.rawPrediction) {
+                rawPrediction.textContent = JSON.stringify(data.rawPrediction, null, 2);
+            }
+
+            // Show results
+            uploadSection.style.display = 'none';
+            resultSection.style.display = 'block';
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Toggle detailed prediction view
+        function toggleDetails() {
+            const isVisible = predictionDetails.style.display === 'block';
+            predictionDetails.style.display = isVisible ? 'none' : 'block';
+            detailsBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                ${isVisible ? 'Show Details' : 'Hide Details'}
+            `;
+        }
+
+        // Reset form
+        function resetForm() {
+            resetFileInput();
+            uploadSection.style.display = 'block';
+            resultSection.style.display = 'none';
+            predictionDetails.style.display = 'none';
+            detailsBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                Show Details
+            `;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
